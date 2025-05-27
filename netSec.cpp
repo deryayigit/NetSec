@@ -21,7 +21,7 @@ using namespace std;
 mutex dosya_mutex;
 ofstream dosya("sonuclar_windows.txt", ios::out | ios::trunc); // Log dosyası
 
-// ----------------------------- SERVİS ADI HARİTASI -----------------------------
+
 const int portlar[] = { 21, 22, 23, 25, 53, 80, 110, 143, 443, 3306, 3389, 853, 8080, 8443, 5900 };
 const int port_sayisi = sizeof(portlar) / sizeof(portlar[0]);
 
@@ -36,7 +36,7 @@ string servis_ismi(int port) {
     return "Bilinmeyen";
 }
 
-// ----------------------------- ZAMAN DAMGASI -----------------------------
+
 string zaman_damgasi() {
     time_t simdi = time(0);
     tm* ltm = localtime(&simdi);
@@ -45,7 +45,7 @@ string zaman_damgasi() {
     return string(zaman);
 }
 
-// ----------------------------- OS TAHMİNİ (BANNER ANALİZİ) -----------------------------
+
 string os_tahmini_banner(const string& banner) {
     string banner_lc = banner;
     for (char& c : banner_lc) c = tolower(c);
@@ -56,7 +56,7 @@ string os_tahmini_banner(const string& banner) {
     return "";
 }
 
-// ----------------------------- TCP BANNER ALMA (Application Layer) -----------------------------
+
 string banner_al(const string& ip, int port) {
     SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (s == INVALID_SOCKET) return "";
@@ -96,7 +96,7 @@ string banner_al(const string& ip, int port) {
         return "";
 }
 
-// ----------------------------- TCP PORT TESPİTİ -----------------------------
+
 void tcp_tara(const string& ip, int port) {
     SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (s == INVALID_SOCKET) return;
@@ -129,7 +129,7 @@ void tcp_tara(const string& ip, int port) {
     closesocket(s);
 }
 
-// ----------------------------- UDP PORT TESPİTİ -----------------------------
+
 void udp_tara(const string& ip, int port) {
     SOCKET s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (s == INVALID_SOCKET) return;
@@ -162,7 +162,7 @@ void udp_tara(const string& ip, int port) {
     closesocket(s);
 }
 
-// ----------------------------- ANA PROGRAM -----------------------------
+
 int main() {
     setlocale(LC_ALL, "Turkish");
     WSADATA wsaData;
