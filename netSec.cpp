@@ -1,7 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
-// Gerekli kütüphaneler
 #include <iostream>
 #include <string>
 #include <winsock2.h>
@@ -19,8 +18,6 @@
 using namespace std;
 
 mutex dosya_mutex;
-ofstream dosya("sonuclar_windows.txt", ios::out | ios::trunc); // Log dosyası
-
 
 const int portlar[] = { 21, 22, 23, 25, 53, 80, 110, 143, 443, 3306, 3389, 853, 8080, 8443, 5900 };
 const int port_sayisi = sizeof(portlar) / sizeof(portlar[0]);
@@ -115,15 +112,15 @@ void tcp_tara(const string& ip, int port) {
 
         lock_guard<mutex> kilit(dosya_mutex);
         cout << zaman_damgasi() << " | TCP Port: " << port << " açık\n";
-        dosya << zaman_damgasi() << " | TCP Port: " << port << " açık\n";
+        //dosya << zaman_damgasi() << " | TCP Port: " << port << " açık\n";
 
         if (!banner.empty()) {
             cout << "\t[Banner: " << banner.substr(0, 60) << "]\n";
-            dosya << "\t[Banner: " << banner.substr(0, 60) << "]\n";
+            //dosya << "\t[Banner: " << banner.substr(0, 60) << "]\n";
         }
         else {
             cout << "\t[Banner alınamadı: port açık ama servis cevap vermiyor olabilir]\n";
-            dosya << "\t[Banner alınamadı: port açık ama servis cevap vermiyor olabilir]\n";
+            //dosya << "\t[Banner alınamadı: port açık ama servis cevap vermiyor olabilir]\n";
         }
     }
     closesocket(s);
@@ -153,11 +150,11 @@ void udp_tara(const string& ip, int port) {
     lock_guard<mutex> kilit(dosya_mutex);
     if (sonuc >= 0) {
         cout << zaman_damgasi() << " | UDP Port " << port << " açık\n";
-        dosya << zaman_damgasi() << " | UDP Port " << port << " açık\n";
+        //dosya << zaman_damgasi() << " | UDP Port " << port << " açık\n";
     }
     else {
         cout << zaman_damgasi() << " | UDP Port " << port << " cevap yok – kapalı veya filtrelenmiş olabilir\n";
-        dosya << zaman_damgasi() << " | UDP Port " << port << " cevap yok – kapalı veya filtrelenmiş olabilir\n";
+        //dosya << zaman_damgasi() << " | UDP Port " << port << " cevap yok – kapalı veya filtrelenmiş olabilir\n";
     }
     closesocket(s);
 }
@@ -223,7 +220,7 @@ int main() {
 
     for (int i = 0; i < idx; ++i) threadler[i].join();
 
-    dosya.close();
+    //dosya.close();
     WSACleanup();
     return 0;
 }
