@@ -1,29 +1,27 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
+// Gerekli kütüphaneler
 #include <iostream>
 #include <string>
-#include <locale>
-#include <codecvt>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <fstream>
-#include <sstream>
-#include <cstdlib>
-#include <array>
 #include <map>
-#include <windows.h>
 #include <thread>
 #include <mutex>
 #include <ctime>
+#include <cstdlib>
+#include <cstdio>
 
-#pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "ws2_32.lib") // Winsock kütüphanesini bağla
 
 using namespace std;
 
 mutex dosya_mutex;
-ofstream dosya("sonuclar_windows.txt", ios::out | ios::trunc);
+ofstream dosya("sonuclar_windows.txt", ios::out | ios::trunc); // Log dosyası
 
+// ----------------------------- SERVİS ADI HARİTASI -----------------------------
 const int portlar[] = { 21, 22, 23, 25, 53, 80, 110, 143, 443, 3306, 3389, 853, 8080, 8443, 5900 };
 const int port_sayisi = sizeof(portlar) / sizeof(portlar[0]);
 
@@ -38,11 +36,7 @@ string servis_ismi(int port) {
     return "Bilinmeyen";
 }
 
-string os_tahmini_banner(const string& banner);
-string banner_al(const string& ip, int port);
-string zaman_damgasi();
-void udp_tara(const string& ip, int port);
-
+// ----------------------------- ZAMAN DAMGASI -----------------------------
 string zaman_damgasi() {
     time_t simdi = time(0);
     tm* ltm = localtime(&simdi);
@@ -51,6 +45,7 @@ string zaman_damgasi() {
     return string(zaman);
 }
 
+// ----------------------------- OS TAHMİNİ (BANNER ANALİZİ) -----------------------------
 string os_tahmini_banner(const string& banner) {
     string banner_lc = banner;
     for (char& c : banner_lc) c = tolower(c);
@@ -61,6 +56,7 @@ string os_tahmini_banner(const string& banner) {
     return "";
 }
 
+// ----------------------------- TCP BANNER ALMA (Application Layer) -----------------------------
 string banner_al(const string& ip, int port) {
     SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (s == INVALID_SOCKET) return "";
@@ -100,6 +96,40 @@ string banner_al(const string& ip, int port) {
         return "";
 }
 
+// ----------------------------- TCP PORT TESPİTİ -----------------------------
+void tcp_tara(const string& ip, int port) {
+    SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (s == INVALID_SOCKET) return;
+
+    sockaddr_in hedef;
+    hedef.sin_family = AF_INET;
+    hedef.sin_port = htons(port);
+    inet_pton(AF_INET, ip.c_str(), &hedef.sin_addr);
+
+    DWORD timeout = 200;
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+
+    if (connect(s, (sockaddr*)&hedef, sizeof(hedef)) == 0) {
+        string servis = servis_ismi(port);
+        string banner = banner_al(ip, port);
+
+        lock_guard<mutex> kilit(dosya_mutex);
+        cout << zaman_damgasi() << " | TCP Port: " << port << " açık\n";
+        dosya << zaman_damgasi() << " | TCP Port: " << port << " açık\n";
+
+        if (!banner.empty()) {
+            cout << "\t[Banner: " << banner.substr(0, 60) << "]\n";
+            dosya << "\t[Banner: " << banner.substr(0, 60) << "]\n";
+        }
+        else {
+            cout << "\t[Banner alınamadı: port açık ama servis cevap vermiyor olabilir]\n";
+            dosya << "\t[Banner alınamadı: port açık ama servis cevap vermiyor olabilir]\n";
+        }
+    }
+    closesocket(s);
+}
+
+// ----------------------------- UDP PORT TESPİTİ -----------------------------
 void udp_tara(const string& ip, int port) {
     SOCKET s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (s == INVALID_SOCKET) return;
@@ -132,6 +162,7 @@ void udp_tara(const string& ip, int port) {
     closesocket(s);
 }
 
+// ----------------------------- ANA PROGRAM -----------------------------
 int main() {
     setlocale(LC_ALL, "Turkish");
     WSADATA wsaData;
@@ -144,73 +175,46 @@ int main() {
     cout << "IP ya da domain girin: ";
     getline(cin, input);
 
-    addrinfo hints = {}, * res;
-    hints.ai_family = AF_INET;
-    if (getaddrinfo(input.c_str(), nullptr, &hints, &res) != 0) {
-        cerr << "Hostname/IP çözümlenemedi!\n";
-        return 1;
+    string ip = input;
+    in_addr addr;
+    if (inet_pton(AF_INET, input.c_str(), &addr) != 1) {
+        addrinfo hints = {}, * res;
+        hints.ai_family = AF_INET;
+        if (getaddrinfo(input.c_str(), nullptr, &hints, &res) != 0) {
+            cerr << "Hostname/IP çözülemedi!\n";
+            return 1;
+        }
+        sockaddr_in* ipv4 = (sockaddr_in*)res->ai_addr;
+        ip = inet_ntoa(ipv4->sin_addr);
+        freeaddrinfo(res);
     }
-
-    sockaddr_in* ipv4 = (sockaddr_in*)res->ai_addr;
-    string ip = inet_ntoa(ipv4->sin_addr);
-    freeaddrinfo(res);
 
     cout << "\n[+] OS tespiti yapılıyor...\n";
-
     string tahmini_os = "Tespit edilemedi (Ping cevapsız veya TTL alınamadı)";
+    string komut = "ping -n 1 " + ip;
+    FILE* pipe = _popen(komut.c_str(), "r");
+    string cikti;
+    char buffer[256];
+    while (fgets(buffer, sizeof(buffer), pipe)) cikti += buffer;
+    _pclose(pipe);
 
-    for (int i = 0; i < port_sayisi; ++i) {
-        int port = portlar[i];
-        if (port == 22 || port == 80 || port == 443) {
-            string banner = banner_al(ip, port);
-            if (!banner.empty()) {
-                string os_ipucu = os_tahmini_banner(banner);
-                if (!os_ipucu.empty()) {
-                    tahmini_os = os_ipucu;
-                    break;
-                }
-            }
-        }
+    size_t pos = cikti.find("TTL=");
+    if (pos != string::npos) {
+        int ttl = stoi(cikti.substr(pos + 4));
+        if (ttl >= 128) tahmini_os = "Muhtemelen Windows";
+        else if (ttl >= 64) tahmini_os = "Muhtemelen Linux";
+        else if (ttl > 0) tahmini_os = "Muhtemelen Embedded/Router/IoT";
     }
-
     cout << "\n[+] Tahmini isletim sistemi: " << tahmini_os << "\n";
 
-    thread threadler[sizeof(portlar) / sizeof(portlar[0]) * 2];
+    thread threadler[port_sayisi * 2];
     int idx = 0;
     for (int i = 0; i < port_sayisi; ++i) {
         int port = portlar[i];
         threadler[idx++] = thread([=]() {
-            SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-            if (s == INVALID_SOCKET) return;
-
-            sockaddr_in hedef;
-            hedef.sin_family = AF_INET;
-            hedef.sin_port = htons(port);
-            inet_pton(AF_INET, ip.c_str(), &hedef.sin_addr);
-
-            DWORD timeout = 200;
-            setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
-
-            if (connect(s, (sockaddr*)&hedef, sizeof(hedef)) == 0) {
-                string servis = servis_ismi(port);
-                string banner = banner_al(ip, port);
-
-                lock_guard<mutex> kilit(dosya_mutex);
-                cout << "Port " << port << " açık. [Servis: " << servis << "] ";
-                dosya << "Port " << port << " açık. [Servis: " << servis << "] ";
-                if (!banner.empty()) {
-                    cout << "[Banner: " << banner.substr(0, 60) << "]\n";
-                    dosya << "[Banner: " << banner.substr(0, 60) << "]\n";
-                }
-                else {
-                    cout << "[Banner alınamadı: port açık ama servis cevap vermiyor olabilir]\n";
-                    dosya << "[Banner alınamadı: port açık ama servis cevap vermiyor olabilir]\n";
-                }
-            }
-            closesocket(s);
+            tcp_tara(ip, port);
             });
     }
-
     for (int i = 0; i < port_sayisi; ++i) {
         threadler[idx++] = thread([=]() {
             udp_tara(ip, portlar[i]);
