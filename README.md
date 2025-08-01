@@ -79,8 +79,6 @@
    Banner Alımı: Servis hakkında bilgi içeren metinlerin alınması, OS tahmini için kritiktir. 
    
    Paralel Port Taraması: Thread kullanımı ile işlem süresi önemli ölçüde azaltılmıştır. 
-   
-   Zaman Damgası ve Loglama: Dosya erişim çakışmalarının önlenmesi için mutex kullanılmıştır. 
 
 
  
