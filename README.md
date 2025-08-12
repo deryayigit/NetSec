@@ -1,88 +1,72 @@
-1. Temel Bilgiler 
+# Port and Service Scanner with OS Detection
 
- 1.1. Problem Tanımı ve Amaç 
+## 1. Basic Information
 
-  IP adresi verilen uzak makinede çalışan işletim sistemini tespit edebilen,  
-  
-  sunucu üzerindeki açık portların ve bu portlar üzerinde çalışan servislerin  
-  
-  isimlerini listeleyen bir program. Projenin gereklilikleri: 
-  
-  Hangi işletim sistemini kullandığını banner verisiyle tahmin etmek, 
-  
-  Hangi TCP ve UDP portlarının açık olduğunu eş zamanlı olarak taramak, 
-  
-  Açık portlar üzerinde çalışan servis isimlerini tespit etmek, 
-  
-  Tüm bu bilgileri zaman damgalarıyla birlikte dosyaya ve ekrana yazmaktır. 
+### 1.1 Problem Definition and Purpose
+A C++ program that:
+- Detects the operating system of a remote machine given its IP address
+- Lists open TCP and UDP ports
+- Identifies the services running on these ports
+- Saves all results to both a file and the console with timestamps
 
-1.2. Proje Bölümleri 
+**Project Requirements:**
+- Estimate the OS from service banner data
+- Perform simultaneous TCP and UDP port scanning
+- Detect service names on open ports
+- Log results with timestamps to a file and display on screen
 
-  Giriş Birimi: IP/domain alımı ve çözümleme 
-  
-  TCP Port Taraması: Her bir TCP portuna bağlantı kurulup servis/bilgi çekilmesi 
-  
-  UDP Port Taraması: UDP ile basit test mesajı gönderilmesi ve yanıt beklenmesi 
-  
-  Banner Analizi: TCP bağlantısından gelen banner verisinin alınması 
-  
-  OS Tahmini: Banner içeriğine göre olası işletim sistemi çıkarımı 
-  
-  Veri Kaydı: Sonuçların sonuclar_windows.txt adlı dosyaya kaydı 
-  
-  Eşzamanlılık: Tüm taramaların thread'ler ile paralel gerçekleştirilmesi 
+---
 
-1.3. Kullanılan Teknoloji ve Araçlar 
+### 1.2 Project Sections
+- **Input Unit:** Accept and resolve IP/domain name
+- **TCP Port Scanning:** Connect to each TCP port and retrieve service information
+- **UDP Port Scanning:** Send a basic test message via UDP and await a response
+- **Banner Analysis:** Extract banner data from TCP connections
+- **OS Detection:** Estimate the possible OS based on banner content
+- **Data Logging:** Save results to `sonuclar_windows.txt`
+- **Concurrency:** Use threads for parallel scanning
 
-  Programlama Dili: C++ 
-  
-  Geliştirme Ortamı (IDE): Microsoft Visual Studio (Windows) 
-  
-  Kütüphaneler: 
-  
-  +winsock2.h & ws2tcpip.h (ağ programlama için) 
-  
-  +thread, mutex (çoklu iş parçacığı yönetimi için) 
-  
-  +fstream, map, ctime (veri işleme ve dosya kaydı) 
+---
 
-1.4. Donanımsal Gereksinimler 
+### 1.3 Technologies and Tools
+- **Programming Language:** C++
+- **IDE:** Microsoft Visual Studio (Windows)
+- **Libraries:**
+  - `winsock2.h` & `ws2tcpip.h` (network programming)
+  - `thread`, `mutex` (multithreading)
+  - `fstream`, `map`, `ctime` (data processing & file logging)
 
-  +İşlemci: x86_64 mimaride çalışan herhangi bir modern işlemci 
-  
-  +Bellek: Minimum 8 GB RAM 
-  
-  +Depolama: En az 8 GB boş disk alanı 
-  
-  +İşletim Sistemi: Windows 10/11 (geliştirme ortamı), istenirse sanal makineler üzerinden Linux test desteği 
+---
 
- 
+### 1.4 Hardware Requirements
+- **Processor:** Any modern x86_64 CPU
+- **Memory:** Minimum 8 GB RAM
+- **Storage:** Minimum 8 GB free disk space
+- **Operating System:** Windows 10/11 (development environment), optional Linux testing via virtual machines
 
-2. Projeye Dair Teknik Gereklilikler 
+---
 
-  2.1. Projenin Algoritması: 
-  
-   Kullanıcıdan IP/domain alınır ve çözümleme yapılır. 
-   
-   Belirli TCP portlara bağlantı sağlanır, servis banner'ı alınmaya çalışılır. 
-   
-   Banner’da işletim sistemi bilgisi aranır ve OS tahmini yapılır. 
-   
-   Aynı anda tüm portlar hem TCP hem UDP üzerinden taranır. 
-   
-   Elde edilen sonuçlar dosyaya ve ekrana yazılır. 
+## 2. Technical Requirements
 
- 2.2. Proje Adımları ve Kritik Kısımlar 
+### 2.1 Project Algorithm
+1. Receive IP or domain from the user and resolve it
+2. Connect to specific TCP ports and retrieve service banners
+3. Analyze banner data for OS estimation
+4. Perform TCP and UDP scanning in parallel
+5. Log results to file and display them in the console
 
-   Winsock Başlatma (WSAStartup): Windows ortamında ağ fonksiyonlarının kullanılabilmesi için zorunludur. 
-   
-   Banner Alımı: Servis hakkında bilgi içeren metinlerin alınması, OS tahmini için kritiktir. 
-   
-   Paralel Port Taraması: Thread kullanımı ile işlem süresi önemli ölçüde azaltılmıştır. 
+### 2.2 Critical Components
+- **Winsock Initialization (`WSAStartup`):** Required for network functions in Windows
+- **Banner Retrieval:** Critical for OS detection
+- **Parallel Port Scanning:** Uses threads to reduce execution time
 
+---
 
- 
+## 3. Overview
+This project demonstrates the core techniques behind tools like **Nmap**.  
+With features like simultaneous TCP/UDP scanning, banner retrieval, and OS estimation, it is designed as a practical, real-world solution rather than a purely theoretical exercise.
 
-2. Projenin Genel Görünümü  
+---
 
-Bu proje temel port tarayıcı yazılımlarının (örn. Nmap) temelini oluşturan teknikleri uygulamalı olarak ortaya koyar. Aynı anda TCP ve UDP tarama yapabilmesi, servis banner bilgilerini okuyup OS tahmini yapabilmesi gibi özellikleriyle sadece teorik bir çalışma değil, gerçek dünya problemlerine yönelik bir çözüm sunmaktadır. Projede ağ programlama, eşzamanlılık, protokol analizi ve sistem güvenliği gibi birçok konu entegre bir biçimde işlenmiştir. 
+## 4. Example Output
+
